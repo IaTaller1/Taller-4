@@ -137,9 +137,22 @@ def forwardBFS(problem: Problem) -> list[Action]:
          to get (next_state, action, cost) triples. Track visited states to
          avoid revisiting the same state twice (graph search, not tree search).
     """
-    ### Your code here ###
-
-    ### End of your code ###
+    initial = problem.getStartState()
+    if problem.isGoalState(initial):
+        return []
+    queue = Queue()
+    queue.push((initial, []))
+    visited = {initial}
+    while not queue.isEmpty():
+        state, plan = queue.pop()
+        for next_state, action, _ in problem.getSuccessors(state):
+            if next_state not in visited:
+                new_plan = plan + [action]
+                if problem.isGoalState(next_state):
+                    return new_plan
+                visited.add(next_state)
+                queue.push((next_state, new_plan))
+    return []
 
 
 # ---------------------------------------------------------------------------
@@ -163,9 +176,11 @@ def regress(goal_set: State, action: Action) -> State | None:
     Tip: Use frozenset operations: intersection (&), difference (-), union (|).
          Check relevance first, then check for contradictions, then compute.
     """
-    ### Your code here ###
-
-    ### End of your code ###
+    if not (action.add_list & goal_set):
+        return None
+    if action.del_list & goal_set:
+        return None
+    return (goal_set - action.add_list) | action.precond_pos
 
 
 def backwardSearch(problem: Problem) -> list[Action]:
@@ -186,9 +201,65 @@ def backwardSearch(problem: Problem) -> list[Action]:
          Skip subgoals that contain static predicates (MedicalPost, Adjacent,
          Pickable) that are false in the initial state — these are dead ends.
     """
-    ### Your code here ###
+    initial = problem.initial_state
+    goal = problem.goal
 
-    ### End of your code ###
+    if goal.issubset(initial):
+        return []
+
+    all_actions = get_all_groundings(problem.domain, problem.objects)
+    static_predicates = frozenset({"MedicalPost", "Adjacent", "Pickable"})
+
+    def normalize(g):
+        return frozenset(f for f in g if not (f[0] in static_predicates and f in initial))
+
+    def is_consistent(g):
+        locations = {}
+        for f in g:
+            if f[0] == "At":
+                entity = f[1]
+                if entity in locations:
+                    return False
+                locations[entity] = f[2]
+        holding = [f for f in g if f[0] == "Holding"]
+        if len(holding) > 1:
+            return False
+        if holding and ("HandsFree", holding[0][1]) in g:
+            return False
+        return True
+
+    start = normalize(goal)
+    queue = Queue()
+    queue.push((start, []))
+    visited = {start}
+
+    while not queue.isEmpty():
+        current_goal, plan = queue.pop()
+        problem._expanded += 1
+
+        for action in all_actions:
+            new_goal = regress(current_goal, action)
+            if new_goal is None:
+                continue
+
+            if any(f[0] in static_predicates and f not in initial for f in new_goal):
+                continue
+
+            new_goal = normalize(new_goal)
+
+            if not is_consistent(new_goal):
+                continue
+
+            new_plan = [action] + plan
+
+            if new_goal.issubset(initial):
+                return new_plan
+
+            if new_goal not in visited:
+                visited.add(new_goal)
+                queue.push((new_goal, new_plan))
+
+    return []
 
 
 # ---------------------------------------------------------------------------
