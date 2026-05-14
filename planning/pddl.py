@@ -17,7 +17,6 @@ Fluent = tuple
 State = frozenset[Fluent]
 Objects = dict[str, list]
 
-
 class ActionSchema:
     """
     A lifted (schematic) PDDL action with variable placeholders.
@@ -171,7 +170,26 @@ def is_applicable(state: State, action: Action) -> bool:
 
     Tip: frozenset supports the .issubset() method and the .isdisjoint() method.
     """
+    ### Your code here ###
+    # CODIGO PRE-IA:
+    # for fluent in action.precond_pos:
+    #     if fluent not in state:
+    #         return False
+    # for fluent in action.precond_neg:
+    #     if fluent in state:
+    #         return False
+    # return True
+    #
+    # PROMPT:
+    # Mi implementación de is_applicable funciona con dos for, uno para revisar
+    # que los fluentes positivos estén en el estado y otro para revisar que los
+    # negativos no estén. Pero en el taller indican que frozenset tiene métodos
+    # como issubset e isdisjoint para hacerlo. Entonces cómo quedaría usando esos
+    # en vez de los bucles, la lógica tiene que ser exactamente la misma.
+    #
+    # CODIGO POST-IA:
     return action.precond_pos.issubset(state) and action.precond_neg.isdisjoint(state)
+    ### End of your code ###
 
 
 def apply_action(state: State, action: Action) -> State:
@@ -183,7 +201,24 @@ def apply_action(state: State, action: Action) -> State:
     Tip: frozenset supports set arithmetic: `|` (union) and `-` (difference).
     The order matters: first remove del_list, then add add_list.
     """
+    ### Your code here ###
+    # --- Código pre-IA ---
+    # new_state = set(state)
+    # for fluent in action.add_list:      # ERROR: add antes que delete
+    #     new_state.add(fluent)
+    # for fluent in action.del_list:
+    #     new_state.discard(fluent)
+    # return frozenset(new_state)
+    #
+    # --- Prompt ---
+    # Tengo apply_action con un set mutable, dos bucles y al final lo convierto
+    # de vuelta a frozenset. Funciona pero noto que primero agrego el add_list
+    # y luego borro el del_list, me dijeron que el orden debería ser al revés.
+    # Además cómo simplifico esto usando operaciones directas de frozenset.
+    #
+    # --- Código post-IA ---
     return (state - action.del_list) | action.add_list
+    ### End of your code ###
 
 
 def get_all_groundings(domain: list[ActionSchema], objects: Objects) -> list[Action]:
@@ -236,4 +271,31 @@ def get_applicable_actions(
          Then call action_schema.ground(binding) and is_applicable(state, grounded).
          Or use get_all_groundings() and filter the results by applicability.
     """
+    ### Your code here ###
+    # CODIGO PRE-IA:
+    # result = []
+    # type_map = {
+    #     "r": objects["robots"],
+    #     "loc": objects["cells"],
+    #     "from_cell": objects["cells"],
+    #     "to_cell": objects["cells"],
+    #     "obj": objects["objects"],
+    #     "s": objects["supplies"],
+    #     "p": objects["patients"],
+    # }
+    # for schema in domain:
+    #     domains = [type_map.get(param, []) for param in schema.parameters]
+    #     for values in product(*domains):
+    #         binding = dict(zip(schema.parameters, values))
+    #         grounded = schema.ground(binding)
+    #         if is_applicable(grounded, state):  # ERROR: argumentos al revés
+    #             result.append(grounded)
+    # return result
+    #
+    # PROMPT:
+    # No sé por qué pero get_applicable_actions me está devolviendo resultados
+    # raros, no entiendo qué está pasando. no encuentro el error.
+    #
+    # CODIGO POST-IA:
     return [a for a in get_all_groundings(domain, objects) if is_applicable(state, a)]
+    ### End of your code ###

@@ -49,6 +49,37 @@ MOVE: ActionSchema = ActionSchema(
 # After pickup: the object is no longer At loc, and the robot is no longer HandsFree.
 # ---------------------------------------------------------------------------
 
+### Your code here ###
+# CODIGO PRE-IA:
+# PICKUP: ActionSchema = ActionSchema(
+#     name="PickUp",
+#     parameters=["r", "obj", "loc"],
+#     precond_pos=[
+#         ("At", "r", "loc"),
+#         ("At", "obj", "loc"),
+#         ("HandsFree", "r"),
+#         ("Pickable", "obj"),
+#     ],
+#     precond_neg=[],
+#     add_list=[
+#         ("Holding", "r", "obj"),
+#         ("At", "obj", "loc"),   # ERROR: debería estar en del_list
+#     ],
+#     del_list=[
+#         ("HandsFree", "r"),     # Faltaba ("At", "obj", "loc")
+#     ],
+# )
+#
+# PROMPT
+# Tengo implementados los 4 ActionSchema de domain.py pero cuando corro
+# python main.py -p SimpleRescueProblem -f tinyBaseSearch -l tinyBase -q
+# el plan falla. creo que los errores están en PickUp donde puse At(obj,loc)
+# en el add_list cuando creo que debería estar en del_list, en SetupSupplies
+# donde puse At(s,loc) como precondición pero el robot ya lo está cargando,
+# en Rescue donde se me olvidó SuppliesReady, y en PutDown donde metí
+# At(r,loc) en del_list por error. revisa estos 4 y corrígelos.
+#
+# --- Código post-IA ---
 PICKUP: ActionSchema = ActionSchema(
     name="PickUp",
     parameters=["r", "obj", "loc"],
@@ -67,6 +98,7 @@ PICKUP: ActionSchema = ActionSchema(
         ("HandsFree", "r"),
     ],
 )
+### End of your code ###
 
 
 # ---------------------------------------------------------------------------
@@ -75,6 +107,27 @@ PICKUP: ActionSchema = ActionSchema(
 # After putdown: the object is At loc, and the robot is HandsFree again.
 # ---------------------------------------------------------------------------
 
+### Your code here ###
+# CODIGO PRE-IA
+# PUTDOWN: ActionSchema = ActionSchema(
+#     name="PutDown",
+#     parameters=["r", "obj", "loc"],
+#     precond_pos=[
+#         ("At", "r", "loc"),
+#         ("Holding", "r", "obj"),
+#     ],
+#     precond_neg=[],
+#     add_list=[
+#         ("At", "obj", "loc"),
+#         ("HandsFree", "r"),
+#     ],
+#     del_list=[
+#         ("Holding", "r", "obj"),
+#         ("At", "r", "loc"),    # ERROR: el robot no se mueve al soltar el objeto
+#     ],
+# )
+#
+# CODIGO POST-IA (mismo prompt que PICKUP):
 PUTDOWN: ActionSchema = ActionSchema(
     name="PutDown",
     parameters=["r", "obj", "loc"],
@@ -91,6 +144,7 @@ PUTDOWN: ActionSchema = ActionSchema(
         ("Holding", "r", "obj"),
     ],
 )
+### End of your code ###
 
 
 # ---------------------------------------------------------------------------
@@ -99,6 +153,27 @@ PUTDOWN: ActionSchema = ActionSchema(
 # After rescue: patient is marked as Rescued and no longer At loc.
 # ---------------------------------------------------------------------------
 
+### Your code here ###
+# CODIGO PRE-IA:
+# RESCUE: ActionSchema = ActionSchema(
+#     name="Rescue",
+#     parameters=["r", "p", "loc"],
+#     precond_pos=[
+#         ("At", "r", "loc"),
+#         ("At", "p", "loc"),
+#         ("MedicalPost", "loc"),
+#         # ERROR: faltaba ("SuppliesReady", "loc")
+#     ],
+#     precond_neg=[],
+#     add_list=[
+#         ("Rescued", "p"),
+#     ],
+#     del_list=[
+#         ("At", "p", "loc"),
+#     ],
+# )
+#
+# CODIGO POST-IA (mismo prompt que PICKUP):
 RESCUE: ActionSchema = ActionSchema(
     name="Rescue",
     parameters=["r", "p", "loc"],
@@ -116,6 +191,7 @@ RESCUE: ActionSchema = ActionSchema(
         ("At", "p", "loc"),
     ],
 )
+### End of your code ###
 
 
 # ---------------------------------------------------------------------------
@@ -126,6 +202,28 @@ RESCUE: ActionSchema = ActionSchema(
 # the fluent At(s, loc) was removed when the robot picked it up.
 # ---------------------------------------------------------------------------
 
+### Your code here ###
+# CODIGO PRE-IA:
+# SETUP_SUPPLIES: ActionSchema = ActionSchema(
+#     name="SetupSupplies",
+#     parameters=["r", "s", "loc"],
+#     precond_pos=[
+#         ("At", "r", "loc"),
+#         ("At", "s", "loc"),    # ERROR: fluente ya eliminado al hacer PickUp
+#         ("MedicalPost", "loc"),
+#         ("Holding", "r", "s"),
+#     ],
+#     precond_neg=[],
+#     add_list=[
+#         ("SuppliesReady", "loc"),
+#         ("HandsFree", "r"),
+#     ],
+#     del_list=[
+#         ("Holding", "r", "s"),
+#     ],
+# )
+#
+# CODIGO POST-IA (mismo prompt que PICKUP arriba):
 SETUP_SUPPLIES: ActionSchema = ActionSchema(
     name="SetupSupplies",
     parameters=["r", "s", "loc"],
@@ -134,9 +232,7 @@ SETUP_SUPPLIES: ActionSchema = ActionSchema(
         ("MedicalPost", "loc"),
         ("Holding", "r", "s"),
     ],
-    precond_neg=[
-        ("SuppliesReady", "loc"),
-    ],
+    precond_neg=[],
     add_list=[
         ("SuppliesReady", "loc"),
         ("HandsFree", "r"),
@@ -145,6 +241,7 @@ SETUP_SUPPLIES: ActionSchema = ActionSchema(
         ("Holding", "r", "s"),
     ],
 )
+### End of your code ###
 
 
 DOMAIN: list[ActionSchema] = [MOVE, PICKUP, PUTDOWN, RESCUE, SETUP_SUPPLIES]

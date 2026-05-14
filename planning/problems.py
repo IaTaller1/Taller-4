@@ -24,7 +24,23 @@ class SimpleRescueProblem(Problem):
     def __init__(self, layout: RescueLayout) -> None:
         initial_state, objects = build_initial_state(layout)
 
+        ### Your code here ###
+        # Define the goal: patient_0 must be rescued.
+        # Tip: The goal is a frozenset of fluents that must all be True in the goal state.
+        #
+        # CODIGO PRE-IA:
+        # goal = frozenset({("Rescued", "patient_0")})
+        #
+        # PROMPT:
+        # Tengo definidos los goals de SimpleRescueProblem y MultiRescueProblem,
+        # en Simple puse solo el fluente Rescued de patient_0 y en Multi usé una
+        # comprensión sobre objects["patients"] para que escale con cualquier layout.
+        # revisa si la definición es correcta o si me está faltando algo para que
+        # el planificador funcione bien en ambos casos.
+        #
+        # CODIGO POST-IA:
         goal = frozenset({("Rescued", "patient_0")})
+        ### End of your code ###
 
         super().__init__(initial_state, goal, DOMAIN, objects)
         self.layout = layout
@@ -45,7 +61,18 @@ class MultiRescueProblem(Problem):
     def __init__(self, layout: RescueLayout) -> None:
         initial_state, objects = build_initial_state(layout)
 
+        ### Your code here ###
+        # Define the goal: every patient must be rescued.
+        # Tip: Use a set comprehension over objects["patients"].
+        #
+        # CODIGO PRE-IA: 
+        # goal = frozenset({("Rescued", patient) for patient in objects["patients"]})
+        #
+        # PROMPT(mismo que SimpleRescueProblem arriba) ---
+        #
+        # CODIGO POST-IA:
         goal = frozenset({("Rescued", patient) for patient in objects["patients"]})
+        ### End of your code ###
 
         super().__init__(initial_state, goal, DOMAIN, objects)
         self.layout = layout
