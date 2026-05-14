@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+from collections import deque
 from collections.abc import Callable
 
 from planning.pddl import (
@@ -124,34 +126,54 @@ def tinyBaseSearch(problem: Problem) -> list[Action]:
 # ---------------------------------------------------------------------------
 
 
+def _reconstruct_plan(
+    parent: dict[State, tuple[State, Action]], goal: State
+) -> list[Action]:
+    plan: list[Action] = []
+    state = goal
+    while state in parent:
+        state, action = parent[state]
+        plan.append(action)
+    plan.reverse()
+    return plan
+
+
 def forwardBFS(problem: Problem) -> list[Action]:
     """
-    Forward BFS in state space.
+    Forward BFS over the state space.
 
-    Explore states reachable from the initial state by applying actions,
-    in breadth-first order, until a goal state is found.
-
-    Returns a list of Action objects forming a valid plan, or [] if no plan exists.
-
-    Tip: The state is a frozenset of fluents. Use problem.getSuccessors(state)
-         to get (next_state, action, cost) triples. Track visited states to
-         avoid revisiting the same state twice (graph search, not tree search).
+    Explores states reachable from the initial state breadth-first,
+    returning the shortest action sequence to a goal state, or []
+    if the goal is unreachable.
     """
-    initial = problem.getStartState()
-    if problem.isGoalState(initial):
+    start = problem.getStartState()
+
+    if problem.isGoalState(start):
         return []
-    queue = Queue()
-    queue.push((initial, []))
-    visited = {initial}
-    while not queue.isEmpty():
-        state, plan = queue.pop()
+
+    frontier: deque[State] = deque([start])
+    visited: set[State] = {start}
+    parent: dict[State, tuple[State, Action]] = {}
+    states_expanded = 0
+
+    while frontier:
+        state = frontier.popleft()
+        states_expanded += 1
+
         for next_state, action, _ in problem.getSuccessors(state):
-            if next_state not in visited:
-                new_plan = plan + [action]
-                if problem.isGoalState(next_state):
-                    return new_plan
-                visited.add(next_state)
-                queue.push((next_state, new_plan))
+            if next_state in visited:
+                continue
+
+            visited.add(next_state)
+            parent[next_state] = (state, action)
+
+            if problem.isGoalState(next_state):
+                logging.debug("Plan found. States expanded: %d", states_expanded)
+                return _reconstruct_plan(parent, next_state)
+
+            frontier.append(next_state)
+
+    logging.debug("No plan found. States expanded: %d", states_expanded)
     return []
 
 

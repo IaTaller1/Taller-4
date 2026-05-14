@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from planning.pddl import ActionSchema, State, Objects
+from planning.pddl import ActionSchema, State, Objects, get_all_groundings
 
 
 def nullHeuristic(
@@ -44,9 +44,32 @@ def ignorePreconditionsHeuristic(
          with the initial state, or generate all groundings regardless of state).
          Remember: with no preconditions, every grounding is "applicable".
     """
-    ### Your code here ###
+    fluentes_faltantes = set(goal - state)
 
-    ### End of your code ###
+    if len(fluentes_faltantes) == 0:
+        return 0
+
+    todas_las_acciones = get_all_groundings(domain, objects)
+
+    cantidad_acciones = 0
+
+    while len(fluentes_faltantes) > 0:
+        mejor_accion = None
+        mayor_cobertura = 0
+
+        for accion in todas_las_acciones:
+            fluentes_cubiertos = len(accion.add_list & fluentes_faltantes)
+            if fluentes_cubiertos > mayor_cobertura:
+                mayor_cobertura = fluentes_cubiertos
+                mejor_accion = accion
+
+        if mejor_accion is None or mayor_cobertura == 0:
+            return len(fluentes_faltantes)
+
+        fluentes_faltantes = fluentes_faltantes - mejor_accion.add_list
+        cantidad_acciones += 1
+
+    return cantidad_acciones
 
 
 # ---------------------------------------------------------------------------
