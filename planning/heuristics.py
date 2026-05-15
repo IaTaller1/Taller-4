@@ -25,51 +25,31 @@ def ignorePreconditionsHeuristic(
     objects: Objects,
 ) -> float:
     """
-    Estimate the number of actions needed to satisfy all goal fluents,
-    ignoring all action preconditions.
+    Admissible heuristic based on a greedy set-cover relaxation.
 
-    With no preconditions, any action can be applied at any time.
-    Each action can satisfy all goal fluents in its add_list in one step.
-    The minimum number of actions to cover all unsatisfied goal fluents is
-    a lower bound on the true plan length → this heuristic is admissible.
-
-    Algorithm (greedy set cover):
-      1. Compute unsatisfied = goal − state  (fluents still needed).
-      2. Ground all actions ignoring preconditions and collect their add_lists.
-      3. Greedily pick the action whose add_list covers the most unsatisfied fluents.
-      4. Repeat until all fluents are covered; count the actions used.
-
-    Tip: frozenset supports set difference (-) and intersection (&).
-         You only need to ground actions once per call (use get_applicable_actions
-         with the initial state, or generate all groundings regardless of state).
-         Remember: with no preconditions, every grounding is "applicable".
+    Ignores all action preconditions so every grounded action is always
+    applicable. Counts the minimum number of actions needed to cover all
+    unsatisfied goal fluents (lower bound on true plan length).
     """
-    fluentes_faltantes = set(goal - state)
-
-    if len(fluentes_faltantes) == 0:
+    unsatisfied = goal - state
+    if not unsatisfied:
         return 0
 
-    todas_las_acciones = get_all_groundings(domain, objects)
+    groundings = get_all_groundings(domain, objects)
+    actions_taken = 0
 
-    cantidad_acciones = 0
+    while unsatisfied:
+        best_action = max(groundings, key=lambda a: len(a.add_list & unsatisfied))
+        coverage = len(best_action.add_list & unsatisfied)
 
-    while len(fluentes_faltantes) > 0:
-        mejor_accion = None
-        mayor_cobertura = 0
+        if coverage == 0:
+            # Goal fluents unreachable — return remaining count as upper bound
+            return len(unsatisfied)
 
-        for accion in todas_las_acciones:
-            fluentes_cubiertos = len(accion.add_list & fluentes_faltantes)
-            if fluentes_cubiertos > mayor_cobertura:
-                mayor_cobertura = fluentes_cubiertos
-                mejor_accion = accion
+        unsatisfied -= best_action.add_list
+        actions_taken += 1
 
-        if mejor_accion is None or mayor_cobertura == 0:
-            return len(fluentes_faltantes)
-
-        fluentes_faltantes = fluentes_faltantes - mejor_accion.add_list
-        cantidad_acciones += 1
-
-    return cantidad_acciones
+    return actions_taken
 
 
 # ---------------------------------------------------------------------------
